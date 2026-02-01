@@ -1,189 +1,304 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Book Studio Pro</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Book Studio Pro</title>
 
-    <style>
-        :root { --sidebar-width: 280px; --primary-bg: #121212; --accent: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--primary-bg); color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
-        
-        #sidebar { width: var(--sidebar-width); background: #1e1e1e; padding: 15px; display: flex; flex-direction: column; gap: 15px; border-right: 1px solid #333; overflow-y: auto; z-index: 100; }
-        .section { border-bottom: 1px solid #333; padding-bottom: 15px; }
-        h3 { color: var(--accent); margin-bottom: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
-        input, button { width: 100%; padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
-        button { background: var(--accent); color: #000; font-weight: bold; cursor: pointer; border: none; }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
 
-        #main-view { flex: 1; display: flex; flex-direction: column; position: relative; align-items: center; justify-content: center; background: radial-gradient(circle, #2c2c2c 0%, #000 100%); }
-        #book-viewport { width: 95%; height: 80vh; display: flex; justify-content: center; align-items: center; }
-        .page-content { background: white; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+<style>
+:root {
+    --sidebar-width: 280px;
+    --primary-bg: #121212;
+    --accent: #2ecc71;
+}
 
-        #branding-overlay { position: absolute; top: 15px; right: 20px; display: flex; align-items: center; gap: 15px; z-index: 50; }
-        .brand-img { height: 60px; border-radius: 4px; border: 1px solid #555; background: #fff; object-fit: contain; }
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--primary-bg);
+    color: #e0e0e0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
 
-        #controls { position: absolute; bottom: 20px; width: 60%; text-align: center; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 50px; }
-        #progress-bar { width: 100%; cursor: pointer; accent-color: var(--accent); }
-        #loading-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; color: var(--accent); display: none;}
-    </style>
+#sidebar {
+    width: var(--sidebar-width);
+    background: #1e1e1e;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-right: 1px solid #333;
+    overflow-y: auto;
+}
+
+.section { border-bottom: 1px solid #333; padding-bottom: 15px; }
+
+h3 {
+    color: var(--accent);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+input, button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background: #252525;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+button {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#main-view {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, #2c2c2c 0%, #000 100%);
+}
+
+#book-viewport {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#flipbook {
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+}
+
+.page-content {
+    background: #fff;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+#branding-overlay {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+    z-index: 50;
+}
+
+.brand-img {
+    height: 60px;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #555;
+    object-fit: contain;
+    display: none;
+}
+
+#controls {
+    position: absolute;
+    bottom: 20px;
+    width: 60%;
+    background: rgba(0,0,0,0.6);
+    padding: 10px;
+    border-radius: 50px;
+    text-align: center;
+}
+
+#loading-msg {
+    position: absolute;
+    color: var(--accent);
+    font-size: 1.2rem;
+    display: none;
+}
+</style>
 </head>
+
 <body>
 
 <aside id="sidebar">
-    <div class="section">
-        <h3>1. Arquivo</h3>
-        <input type="file" id="pdfInput" accept="application/pdf">
-    </div>
 
-    <div class="section">
-        <h3>2. Aparência</h3>
-        <label>Cor de Fundo:</label>
-        <input type="color" id="bgPicker" value="#121212" onchange="document.getElementById('main-view').style.background = this.value">
-        <label>Ajuste de Zoom:</label>
-        <input type="range" id="zoom" min="0.4" max="1.2" step="0.05" value="0.8" oninput="renderPDF()">
-    </div>
+<div class="section">
+    <h3>1. Arquivo</h3>
+    <input type="file" id="pdfInput" accept="application/pdf">
+</div>
 
-    <div class="section">
-        <h3>3. Identidade (Branding)</h3>
-        <label>Sua Logo:</label>
-        <input type="file" accept="image/*" onchange="loadImg(this, 'logo')">
-        <label>QR Code / Pix:</label>
-        <input type="file" accept="image/*" onchange="loadImg(this, 'qr')">
-    </div>
+<div class="section">
+    <h3>2. Aparência</h3>
+    <label>Cor de Fundo</label>
+    <input type="color" value="#121212"
+        onchange="document.getElementById('main-view').style.background=this.value">
+    <label>Zoom</label>
+    <input type="range" id="zoom" min="0.6" max="1.4" step="0.05" value="1">
+</div>
 
-    <div class="section">
-        <h3>4. Links</h3>
-        <input type="text" id="lName" placeholder="Título (Ex: Loja)">
-        <input type="text" id="lUrl" placeholder="https://...">
-        <button onclick="addLink()">+ Adicionar Link</button>
-        <div id="links-list"></div>
-    </div>
+<div class="section">
+    <h3>3. Identidade</h3>
+    <input type="file" accept="image/*" onchange="loadImg(this,'logo')">
+    <input type="file" accept="image/*" onchange="loadImg(this,'qr')">
+</div>
+
+<div class="section">
+    <h3>4. Links</h3>
+    <input type="text" id="lName" placeholder="Nome">
+    <input type="text" id="lUrl" placeholder="https://">
+    <button onclick="addLink()">Adicionar</button>
+    <div id="links-list"></div>
+</div>
+
 </aside>
 
 <main id="main-view">
-    <div id="loading-msg">Carregando E-book...</div>
-    
-    <div id="branding-overlay">
-        <img id="logo" class="brand-img" style="display:none">
-        <img id="qr" class="brand-img" style="display:none">
-    </div>
 
-    <div id="book-viewport">
-        <div id="flipbook"></div>
-    </div>
+<div id="loading-msg">Carregando PDF...</div>
 
-    <div id="controls">
-        <input type="range" id="progress-bar" value="0">
-        <div id="page-info" style="margin-top:5px">Arraste um PDF ou configure o carregamento automático</div>
-    </div>
+<div id="branding-overlay">
+    <img id="logo" class="brand-img">
+    <img id="qr" class="brand-img">
+</div>
+
+<div id="book-viewport">
+    <div id="flipbook"></div>
+</div>
+
+<div id="controls">
+    <input type="range" id="progress-bar" value="0">
+    <div id="page-info"></div>
+</div>
+
 </main>
 
 <script>
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+const pdfjsLib = window['pdfjs-dist/build/pdf'];
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-    let flipBook = null;
-    let currentPdf = null;
+let flipBook = null;
+let currentPdf = null;
 
-    // ==========================================
-    // CONFIGURAÇÃO IMPORTANTE:
-    const NOME_DO_MEU_PDF = 'MEU EBOOK.pdf'; 
-    // ==========================================
+const PDF_PADRAO = 'MEU EBOOK.pdf';
 
-    // Carregar automaticamente se o arquivo existir no GitHub
-    window.addEventListener('DOMContentLoaded', async () => {
-        if (NOME_DO_MEU_PDF !== 'NOME_DO_SEU_ARQUIVO_AQUI.pdf') {
-            loadPDF(NOME_DO_MEU_PDF);
-        }
+/* ===== AUTOLOAD ===== */
+window.addEventListener('DOMContentLoaded', () => {
+    loadPDF(PDF_PADRAO, true);
+});
+
+document.getElementById('pdfInput').onchange = e => {
+    const file = e.target.files[0];
+    if (file) loadPDF(URL.createObjectURL(file), false);
+};
+
+/* ===== LOAD ===== */
+async function loadPDF(src, persist) {
+    document.getElementById('loading-msg').style.display = 'block';
+
+    const task = pdfjsLib.getDocument(src);
+    currentPdf = await task.promise;
+    await renderPDF();
+
+    document.getElementById('loading-msg').style.display = 'none';
+}
+
+/* ===== RENDER ===== */
+async function renderPDF() {
+    const container = document.getElementById('flipbook');
+    container.innerHTML = '';
+
+    const maxHeight = window.innerHeight * 0.75;
+
+    for (let i = 1; i <= currentPdf.numPages; i++) {
+        const page = await currentPdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = maxHeight / viewport.height;
+        const scaled = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = scaled.width;
+        canvas.height = scaled.height;
+        canvas.className = 'page-content';
+
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: scaled
+        }).promise;
+
+        container.appendChild(canvas);
+    }
+    startFlip();
+}
+
+/* ===== PAGE FLIP ===== */
+function startFlip() {
+    if (flipBook) flipBook.destroy();
+
+    const first = document.querySelector('.page-content');
+
+    flipBook = new St.PageFlip(document.getElementById('flipbook'), {
+        width: first.width,
+        height: first.height,
+        size: "fixed",
+        autoSize: true,
+        showCover: true
     });
 
-    document.getElementById('pdfInput').onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) loadPDF(URL.createObjectURL(file));
+    flipBook.loadFromHTML(document.querySelectorAll('.page-content'));
+    document.getElementById('progress-bar').max = currentPdf.numPages - 1;
+
+    flipBook.on('flip', e => {
+        document.getElementById('progress-bar').value = e.data;
+        document.getElementById('page-info').innerText =
+        `Página ${e.data + 1} de ${currentPdf.numPages}`;
+    });
+}
+
+/* ===== ZOOM ===== */
+document.getElementById('zoom').addEventListener('input', e => {
+    document.getElementById('flipbook').style.transform =
+    `scale(${e.target.value})`;
+});
+
+/* ===== PROGRESS ===== */
+document.getElementById('progress-bar').oninput = e => {
+    if (flipBook) flipBook.turnToPage(+e.target.value);
+};
+
+/* ===== BRANDING ===== */
+function loadImg(input,id){
+    const f = input.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+        const img = document.getElementById(id);
+        img.src = e.target.result;
+        img.style.display = 'block';
     };
+    r.readAsDataURL(f);
+}
 
-    async function loadPDF(source) {
-        document.getElementById('loading-msg').style.display = 'block';
-        try {
-            const loadingTask = pdfjsLib.getDocument(source);
-            currentPdf = await loadingTask.promise;
-            await renderPDF();
-        } catch (e) {
-            alert("Erro ao carregar o arquivo. Verifique o nome do PDF.");
-        }
-        document.getElementById('loading-msg').style.display = 'none';
-    }
-
-    async function renderPDF() {
-        if (!currentPdf) return;
-        const container = document.getElementById('flipbook');
-        container.innerHTML = '';
-        const zoom = document.getElementById('zoom').value;
-
-        for (let i = 1; i <= currentPdf.numPages; i++) {
-            const page = await currentPdf.getPage(i);
-            const viewport = page.getViewport({ scale: zoom * 2 }); // Renderiza em alta qualidade
-            const canvas = document.createElement('canvas');
-            canvas.className = 'page-content';
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-            container.appendChild(canvas);
-        }
-        startFlip();
-    }
-
-    function startFlip() {
-        if (flipBook) flipBook.destroy();
-        const firstCanvas = document.querySelector('canvas');
-        
-        flipBook = new St.PageFlip(document.getElementById('flipbook'), {
-            width: firstCanvas.width,
-            height: firstCanvas.height,
-            size: "stretch",
-            showCover: true,
-            usePortrait: false
-        });
-        
-        flipBook.loadFromHTML(document.querySelectorAll('.page-content'));
-        document.getElementById('progress-bar').max = currentPdf.numPages - 1;
-        
-        flipBook.on('flip', (e) => {
-            document.getElementById('progress-bar').value = e.data;
-            document.getElementById('page-info').innerText = `Página: ${e.data + 1} de ${currentPdf.numPages}`;
-        });
-    }
-
-    document.getElementById('progress-bar').oninput = (e) => {
-        if(flipBook) flipBook.turnToPage(parseInt(e.target.value));
-    };
-
-    function loadImg(input, id) {
-        const file = input.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.getElementById(id);
-                img.src = e.target.result;
-                img.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function addLink() {
-        const name = document.getElementById('lName').value;
-        const url = document.getElementById('lUrl').value;
-        if(name && url) {
-            const a = document.createElement('a');
-            a.href = url; a.target = "_blank";
-            a.innerHTML = `<button style="background:#333; font-size:11px; margin-top:5px">${name}</button>`;
-            document.getElementById('links-list').appendChild(a);
-        }
-    }
+/* ===== LINKS ===== */
+function addLink(){
+    if(!lName.value || !lUrl.value) return;
+    const a = document.createElement('a');
+    a.href = lUrl.value;
+    a.target = "_blank";
+    a.innerHTML =
+    `<button style="background:#333;font-size:11px;margin-top:5px">${lName.value}</button>`;
+    document.getElementById('links-list').appendChild(a);
+}
 </script>
+
 </body>
 </html>
